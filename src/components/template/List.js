@@ -1,5 +1,6 @@
 import {Button, Space, Table} from "antd";
 import {DeleteOutlined, EditOutlined} from "@ant-design/icons";
+import FullHeightTable from "../elemtents/FullHeightTable";
 
 function List(props) {
     const columns = [
@@ -18,7 +19,7 @@ function List(props) {
     ];
 
     return (
-        <Table rowKey="id" dataSource={props.data} columns={columns} />
+        <FullHeightTable rowKey="id" dataSource={props.data} columns={columns} pagination={false} />
     );
 }
 

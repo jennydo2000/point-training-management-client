@@ -9,9 +9,10 @@ function Form(props) {
 
     const getValue = (input, args = []) => {
         if (!Array.isArray(args)) args = [args];
-        if (!input) return null;
-        if (typeof input === "function") return input(input, ...args);
-        else return input;
+        if (!input) input = null;
+        if (typeof input === "function") input = input(...args);
+        else input = input;
+        return input;
     }
 
     return (
@@ -30,9 +31,20 @@ function Form(props) {
                     style={item.type === "hidden" ? {display: "none"} : {}}
                     name={item.name}
                     initialValue={(() => {
-                        let initialValue = initialValues[item.name] || item.initialValue;
-                        if (item.type === "date" && initialValue)
-                            initialValue = moment(initialValue, "YYYY/MM/DD");
+                        let dataIndex = item.dataIndex;
+                        let initialValue = null;
+
+                        if (Object.entries(initialValues).length > 0) {
+                            if (item.dataIndex) {
+                                if (!Array.isArray(item.dataIndex)) dataIndex = [dataIndex];
+                                initialValue = dataIndex?.reduce((o,i)=> o[i], initialValues);
+                            }
+                            else initialValue = initialValues[item.name];
+                        } else {
+                            initialValue = item.initialValue;
+                        }
+
+                        if (item.type === "date") initialValue = initialValue && moment(initialValue, "YYYY/MM/DD");
                         return initialValue;
                     })()}
                     validateStatus={Boolean(getValue(item.error, values) || errors[item.name]) ? "error" : "validating"}
@@ -40,7 +52,7 @@ function Form(props) {
                 >
                     {item.type === "select" ?
                         <Select disabled={item.disabled === true}>
-                            {(Array.isArray(item.options) ? getValue(item.options, values) : options[item.options])?.map((option, index) =>
+                            {(typeof item.options !== "string" ? getValue(item.options, values) : options[item.options])?.map((option, index) =>
                                 <Select.Option key={index} value={option.id}>
                                     {getValue(item.labelOption, option) || option.name}
                                 </Select.Option>
@@ -53,7 +65,7 @@ function Form(props) {
                 </FormComp.Item>
             )}
             <Space align="center" direction="vertical" style={{width: "100%"}}>
-                <Button type="primary" htmlType="submit">Thêm</Button>
+                <Button type="primary" htmlType="submit">Xác nhận</Button>
             </Space>
         </FormComp>
     );

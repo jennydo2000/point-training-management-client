@@ -3,13 +3,9 @@ import {Button, DatePicker, Input} from "antd";
 import {Link, useNavigate, useParams, useSearchParams} from "react-router-dom";
 import request from "../utils/request";
 import moment from "moment";
+import {CheckOutlined} from "@ant-design/icons";
 
 const columns = [
-    {
-        title: "Loại hoạt động",
-        dataIndex: ["activity_type", "name"],
-        key: "activity_type",
-    },
     {
         title: "Mã hoạt động",
         dataIndex: "code",
@@ -28,7 +24,7 @@ const columns = [
             const time_start = record.time_start !== null ? moment(record.time_start?.slice(0, -1)).format("DD/MM/YYYY") : null;
             const time_end = record.time_end !== null ? moment(record.time_end?.slice(0, -1)).format("DD/MM/YYYY") : null;
             if (time_start && time_end) return <>Từ {time_start} đến {time_end}</>
-            else if (!time_start && !time_end) return <>Cả năm</>
+            else if (!time_start && !time_end) return <>Cả học kỳ</>
             else if (time_end) return <> Đến hết ngày {time_end}</>
             else if (time_start) return <> Bắt đầu từ ngày {time_start}</>
         }
@@ -59,6 +55,95 @@ const pre = (values) => {
 function Activity() {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
+
+    const importColumns = [
+        {
+            title: "Học kỳ",
+            key: "semester_id",
+            dataIndex: "semester_id",
+            convert: (text) => parseInt(searchParams.get("semester")) || null,
+        },
+        {
+            title: "Loại hoạt động",
+            key: "activity_type_id",
+            dataIndex: "activity_type_id",
+            columnIndex: "B",
+            convert: (text) => {
+                if (text === "Hoạt động") return 1;
+                else if (text === "Khen thưởng") return 2;
+                else if (text === "Vi phạm") return 3;
+                else return null;
+            }
+        },
+        {
+            title: "Mã hoạt động",
+            key: "code",
+            dataIndex: "code",
+            columnIndex: "C",
+        },
+        {
+            title: "Tên hoạt động",
+            key: "name",
+            dataIndex: "name",
+            columnIndex: "D",
+        },
+        {
+            title: "Thời gian bắt đầu",
+            key: "time_start",
+            dataIndex: "time_start",
+            columnIndex: "E",
+        },
+        {
+            title: "Thời gian kết thúc",
+            key: "time_end",
+            dataIndex: "time_end",
+            columnIndex: "F",
+        },
+        {
+            title: "Địa điểm",
+            key: "address",
+            dataIndex: "address",
+            columnIndex: "G",
+        },
+        {
+            title: "Đơn vị tổ chức",
+            key: "host",
+            dataIndex: "host",
+            columnIndex: "H",
+        },
+        {
+            title: "Mô tả",
+            key: "description",
+            dataIndex: "description",
+            columnIndex: "I",
+        },
+        {
+            title: "Kiểu hoạt động",
+            key: "type",
+            dataIndex: "type",
+            columnIndex: "J",
+            convert: (text) => {
+                if (text === "Đánh dấu") return "CHECK";
+                else if (text === "Đếm số lần") return "COUNT";
+                else if (text === "Lựa chọn") return "ENUM";
+                else return "???";
+            }
+        },
+        {
+            title: "Các lựa chọn",
+            key: "accepts",
+            dataIndex: "accepts",
+            columnIndex: "K",
+            convert: (text) => text?.split(",").map(accept => accept.trim()),
+        },
+        {
+            title: "Giá trị mặc định",
+            key: "default_value",
+            dataIndex: "default_value",
+            columnIndex: "L",
+        },
+    ];
+
     const form = [
         {
             label: "Học kỳ",
@@ -70,9 +155,9 @@ function Activity() {
         {
             label: "Loại hoạt động",
             name: "activity_type_id",
-            type: "select",
-            options: "activity_types",
-            initialValue: 1,
+            type: "hidden",
+            initialValue: parseInt(searchParams.get("activity_type")) || null,
+            hide: () => searchParams.get("activity_type") === null,
         },
         {
             label: "Mã hoạt động",
@@ -128,10 +213,9 @@ function Activity() {
             name: "default_value",
             type: "select",
             options: (values) => {
-                console.log(values);
                 if (values?.type === "ENUM")
-                    if (typeof values?.accepts === "string") return values?.accepts?.split(",").map((accept, index) => ({id: index, name: accept.trim()}));
-                    else return values.accepts.map((accept, index) => ({id: index, name: accept}));
+                    if (typeof values?.accepts === "string") return values?.accepts?.split(",")?.map((accept, index) => ({id: index, name: accept.trim()}));
+                    else return values.accepts?.map((accept, index) => ({id: index, name: accept}));
             },
             initialValue: 0,
             hide: (values) => {
@@ -145,10 +229,29 @@ function Activity() {
         },
     ];
 
+    const buttons = [
+        <Button onClick={() => navigate(`/attendance?semester=${searchParams.get("semester")}&activity_type=${searchParams.get("activity_type")}`)} icon={<CheckOutlined/>}>Điểm danh</Button>,
+    ];
+
+    const getParams = () => {
+        const params = {activity_type: searchParams.get("activity_type")};
+        if (searchParams.get("semester")) params.semester = searchParams.get("semester");
+        return params;
+    }
+
     return (
         <>
-            <Button onClick={() => navigate(`/attendance?semester=${searchParams.get("semester")}`)}>Điểm danh</Button>
-            <Index route="/activities" params={searchParams.get("semester") ? {semester: searchParams.get("semester")} : null} name="Hoạt động" columns={columns} createForm={form} preCreate={pre} preUpdate={pre} updateForm={form}/>
+            <Index
+                route="/activities"
+                params={getParams()}
+                name="Hoạt động"
+                buttons={searchParams.get("semester") && buttons}
+                columns={columns}
+                importColumns={importColumns}
+                createForm={form}
+                preCreate={pre}
+                preUpdate={pre}
+                updateForm={form}/>
         </>
     );
 }

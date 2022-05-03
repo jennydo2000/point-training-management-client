@@ -1,9 +1,11 @@
-import {Button, Table, Tooltip, Typography} from "antd";
+import {Button, Space, Table, Tooltip, Typography} from "antd";
 import {useSearchParams} from "react-router-dom";
 import {useEffect, useState} from "react";
 import {convertTitles} from "./TitleActivity";
 import request from "../utils/request";
 import Text from "antd/es/typography/Text";
+import Title from "antd/es/typography/Title";
+import FullHeightTable from "./elemtents/FullHeightTable";
 
 const markToString = (mark) => {
     switch (mark) {
@@ -20,6 +22,16 @@ const getActivityType = (id) => {
         case 1: return "tham gia";
         case 2: return "nhận khen thưởng";
         case 3: return "bị vi phạm";
+        case 4: return "điểm";
+    }
+}
+
+const getCountable = (id) => {
+    switch (id) {
+        case 1: return "lần";
+        case 2: return "lần";
+        case 3: return "lần";
+        case 4: return "";
     }
 }
 
@@ -35,37 +47,42 @@ const renderPoint = (point) => {
 
 const calculatePoint = (thirdTitleActivity) => {
     if (thirdTitleActivity.type !== "third") return "";
+    if (thirdTitleActivity.title_activities.length === 0) return thirdTitleActivity.max_point;
     let point = thirdTitleActivity.title_activities.reduce((point, titleActivity) => {
         const activity = titleActivity.activity;
-        if (!activity.student_activity.value) return point;
+        if (!activity.student_activity) return point;
         const studentActivity = activity.student_activity;
-        if (activity.type === "CHECK")
-            return point + titleActivity.point[0];
+        const studentValue = studentActivity.value || activity.default_value || 0;
+        if (activity.type === "CHECK") {
+            if (studentValue === 1)
+                return point + titleActivity.point[0];
+            else return point;
+        }
         else if (activity.type === "COUNT") {
-            let currentPoint = studentActivity.value * titleActivity.point[0];
+            let currentPoint = studentValue * titleActivity.point[0];
             titleActivity.options.map(option => {
                 switch (option.type) {
                     case "eq":
-                        if (studentActivity.value === parseInt(option.value)) currentPoint = option.point;
+                        if (studentValue === parseFloat(option.value)) currentPoint = parseFloat(option.point);
                         break;
                     case "gt":
-                        if (studentActivity.value > parseInt(option.value)) currentPoint = option.point;
+                        if (studentValue > parseFloat(option.value)) currentPoint = parseFloat(option.point);
                         break;
                     case "lt":
-                        if (studentActivity.value < parseInt(option.value)) currentPoint = option.point;
+                        if (studentValue < parseFloat(option.value)) currentPoint = parseFloat(option.point);
                         break;
                     case "gte":
-                        if (studentActivity.value >= parseInt(option.value)) currentPoint = option.point;
+                        if (studentValue >= parseFloat(option.value)) currentPoint = parseFloat(option.point);
                         break;
                     case "lte":
-                        if (studentActivity.value <= parseInt(option.value)) currentPoint = option.point;
+                        if (studentValue <= parseFloat(option.value)) currentPoint = parseFloat(option.point);
                         break;
                 }
             });
             return point + currentPoint;
         }
         else if (activity.type === "ENUM")
-            return point + titleActivity.point[studentActivity.value];
+            return point + titleActivity.point[studentValue];
         else return point;
     }, thirdTitleActivity.default_point);
     return Math.min(Math.max(point, 0), thirdTitleActivity.max_point);
@@ -87,24 +104,29 @@ function StudentPoint() {
             title: "Điểm tối đa",
             dataIndex: "max_point",
             key: "max_point",
+            width: 120,
         },
         {
             title: "Điểm mặc định",
             dataIndex: "default_point",
             key: "default_point",
+            width: 130,
         },
         {
-            title: "Điểm chấm tự động",
+            title: "Điểm",
             dataIndex: "point",
             key: "point",
+            width: 150,
             render: (text, record) => text && <Text keyboard>{text}</Text>
         },
         {
             title: "Lý do",
             dataIndex: "",
             key: "reason",
+            width: 300,
             render: (text, record) => {
                 if (record.type !== "third") return "";
+                if (record.title_activities.length === 0) return "Không có mục cộng điểm, cộng tối đa";
                 return record.title_activities.map((titleActivity) => {
                     const activity = titleActivity.activity;
                     const studentActivity = activity.student_activity;
@@ -117,13 +139,13 @@ function StudentPoint() {
                     else if (activity.type === "COUNT")
                         return (
                             <Tooltip title={activity.name} placement="left">
-                                <Text style={{display: "block"}} keyboard><b>[{activity.code}]</b> {studentActivity?.value || 0} lần {getActivityType(activity.activity_type_id)}</Text>
+                                <Text style={{display: "block"}} keyboard><b>[{activity.code}]</b> {studentActivity?.value || 0} {getCountable(activity.activity_type_id)} {getActivityType(activity.activity_type_id)}</Text>
                             </Tooltip>
                         );
                     else if (activity.type === "ENUM")
                         return (
                             <Tooltip title={activity.name} placement="left">
-                                <Text style={{display: "block"}} keyboard><b>[{activity.code}]</b> {activity.accepts[studentActivity.value]}</Text>
+                                <Text style={{display: "block"}} keyboard><b>[{activity.code}]</b> {activity.accepts[studentActivity?.value || activity.default_value]}</Text>
                             </Tooltip>
                         );
                     else return <></>;
@@ -150,9 +172,9 @@ function StudentPoint() {
                         return (
                             <>
                                 <Typography style={{fontWeight: "bold"}}>[{activity.code}] {activity.name}</Typography>
-                                <Typography>Mỗi lần {getActivityType(activity.activity_type_id)}: {renderPoint(titleActivity.point[0])}</Typography>
+                                <Typography>Mỗi {getCountable(activity.activity_type_id)} {getActivityType(activity.activity_type_id)}: {renderPoint(titleActivity.point[0])}</Typography>
                                 {titleActivity.options.map((option, index) =>
-                                    <Typography key={index}>Nếu số lần {getActivityType(activity.activity_type_id)} {markToString(option.type)} <Text keyboard>{option.value}</Text> thì điểm {renderPoint(option.point)}</Typography>
+                                    <Typography key={index}>Nếu số {getCountable(activity.activity_type_id)} {getActivityType(activity.activity_type_id)} {markToString(option.type)} <Text keyboard>{option.value}</Text> thì điểm {renderPoint(option.point)}</Typography>
                                 )}
                             </>
                         );
@@ -173,6 +195,10 @@ function StudentPoint() {
     const [searchParams] = useSearchParams();
     const [data, setData] = useState({
         data: [],
+        student: {
+            user: {},
+            class: {},
+        },
     });
 
     useEffect(async () => {
@@ -198,6 +224,7 @@ function StudentPoint() {
         });
 
         data.data = convertedData;
+        data.student = newData.student;
         setData({...data});
     }, []);
 
@@ -206,7 +233,17 @@ function StudentPoint() {
     }
 
     return (
-        <Table columns={columns} dataSource={data.data} pagination={false} sticky/>
+        <>
+            <Title style={{textAlign: "center"}}>Chấm điểm rèn luyện</Title>
+            <div style={{display: "flex", justifyContent: "center"}}>
+                <Space size="large">
+                    <Text>MSSV: {data.student.student_code}</Text>
+                    <Text>Họ và tên: {data.student.user.first_name} {data.student.user.last_name}</Text>
+                    <Text>Lớp: {data.student.class.name}</Text>
+                </Space>
+            </div>
+            <FullHeightTable columns={columns} dataSource={data.data} pagination={false} sticky/>
+        </>
     );
 }
 

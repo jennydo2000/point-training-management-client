@@ -2,8 +2,10 @@ import {useEffect, useState} from "react";
 import {useNavigate, useSearchParams} from "react-router-dom";
 import {useForm} from "antd/es/form/Form";
 import request from "../utils/request";
-import {Button, Form, Input, Modal, Select, Space, Table, Typography} from "antd";
+import {AutoComplete, Button, Form, Input, Modal, Select, Space, Table, Typography} from "antd";
 import {DeleteFilled} from "@ant-design/icons";
+import Title from "antd/es/typography/Title";
+import FullHeightTable from "./elemtents/FullHeightTable";
 
 export const convertTitles = (primaryTitles) => {
     const alphabet = "abcdefghijklmnopqrstuvwxyz";
@@ -43,11 +45,13 @@ function TitleActivity() {
             title: "Điểm tối đa",
             dataIndex: "max_point",
             key: "max_point",
+            width: 120,
         },
         {
             title: "Điểm mặc định",
             dataIndex: "default_point",
             key: "default_point",
+            width: 130,
         },
         {
             title: "Các hoạt động đánh giá",
@@ -64,6 +68,7 @@ function TitleActivity() {
             title: "Hành động",
             dataIndex: "",
             key: "",
+            width: 150,
             render: (text, record) => {
                 if (record.type === "third") return  <Button onClick={() => openThirdTitleActivity(JSON.parse(JSON.stringify(record)))}>Chỉnh sửa</Button>;
             },
@@ -114,13 +119,21 @@ function TitleActivity() {
 
     return (
         <>
+            <Title style={{textAlign: "center", marginBottom: 0}}>Phiếu chấm điểm rèn luyện sinh viên</Title>
+
             <Button onClick={() => navigate(`/points?sheet=${searchParams.get("sheet")}`)}>Xem điểm rèn luyện sinh viên</Button>
 
-            <Table columns={columns} dataSource={data.data} pagination={false} sticky/>
+            <FullHeightTable
+                columns={columns}
+                dataSource={data.data}
+                pagination={false}
+                sticky
+            />
 
             <Modal
                 title="Các tiêu chí đánh giá"
                 destroyOnClose
+                centered
                 width={1000}
                 visible={Boolean(thirdTitleActivity)}
                 onCancel={closeThirdTitleActivity}
@@ -149,6 +162,7 @@ const ThirdTitleActivity = (props) => {
         data: [],
     });
     const [titleActivityIndex, setTitleActivityIndex] = useState(-1);
+    const [keyword, setKeyword] = useState('');
     const [form] = useForm();
 
     if (!title.type === "third") return;
@@ -193,6 +207,7 @@ const ThirdTitleActivity = (props) => {
     }
 
     const closeAddActivity = () => {
+        setKeyword('');
         setActivityModal(null);
     }
 
@@ -209,14 +224,14 @@ const ThirdTitleActivity = (props) => {
         return (await request.get(`/activities?semester=${props.sheet.semester_id}&type=all`)).data;
     }
 
-    const addTitleActivity = (activityIndex) => {
+    const addTitleActivity = (activityId) => {
         const newTitleActivity = defaultTitleActivity;
-        newTitleActivity.activity = activities.data[activityIndex];
+        newTitleActivity.activity = activities.data.find(activity => activity.id === activityId);
         newTitleActivity.activity_id = newTitleActivity.activity.id;
         newTitleActivity.third_title_id = title.id;
         newTitleActivity.sheet_id = props.sheet.id;
         title.title_activities.push(newTitleActivity);
-        title.title_activities = [...title.title_activities];
+        props.title.title_activities = title.title_activities = [...title.title_activities];
         setTitle({...title});
         closeAddActivity();
     }
@@ -224,6 +239,7 @@ const ThirdTitleActivity = (props) => {
     const deleteTitleActivity = () => {
         const titleActivity = title.title_activities.splice(titleActivityIndex, 1)[0];
         title.title_activities = [...title.title_activities];
+        props.title.title_activities = [...title.title_activities];
         if (!title.delete) title.delete = [];
         if (titleActivity.id) title.delete.push(titleActivity.id);
         setTitle({...title});
@@ -240,6 +256,7 @@ const ThirdTitleActivity = (props) => {
             <Modal
                 title="Thêm hoạt động"
                 destroyOnClose
+                centered
                 visible={Boolean(activityModal === "CREATE")}
                 onCancel={closeAddActivity}
                 footer={[
@@ -248,38 +265,43 @@ const ThirdTitleActivity = (props) => {
                 ]}
             >
                 {activityModal === "CREATE" &&
-                    <Form
-                        form={form}
-                        labelCol={{span: 6}}
-                        wrapperCol={{span: 18}}
-                        onFinish={(values) => addTitleActivity(values.activity_index)}
-                    >
-                        <Form.Item
-                            label="Hoạt động"
-                            name="activity_index"
+                    <>
+                        <Form
+                            form={form}
+                            labelCol={{span: 6}}
+                            wrapperCol={{span: 18}}
+                            onFinish={(values) => addTitleActivity(values.activity_id)}
                         >
-                            <Select
-                                style={{width: "100%"}}
-                                filterOption={false}
-                                defaultValue={-1}
+                            <Form.Item
+                                label="Hoạt động"
+                                name="activity_id"
                             >
-                                <Select.Option value={-1}>Chọn hoạt động...</Select.Option>
-                                {activities.data.map((activity, index) =>
-                                    <Select.Option
-                                        key={index}
-                                        value={index}
-                                    >
-                                        [{activity.code}]: {activity.name}
-                                    </Select.Option>)}
-                            </Select>
-                        </Form.Item>
-                    </Form>
+                                <Select
+                                    showSearch
+                                    onKeyDown={(e) => setKeyword(e.target.value)}
+                                    style={{width: "100%"}}
+                                    filterOption={false}
+                                    defaultValue={-1}
+                                >
+                                    <Select.Option value={-1}>Chọn hoạt động...</Select.Option>
+                                    {activities.data.filter(item => keyword === '' || item.name.toLowerCase().includes(keyword.toLowerCase())).map((activity, index) =>
+                                        <Select.Option
+                                            key={index}
+                                            value={activity.id}
+                                        >
+                                            [{activity.code}]: {activity.name}
+                                        </Select.Option>)}
+                                </Select>
+                            </Form.Item>
+                        </Form>
+                    </>
                 }
             </Modal>
 
             <Modal
                 title="Xóa hoạt động"
                 destroyOnClose
+                centered
                 visible={Boolean(activityModal === "DELETE")}
                 onCancel={closeDeleteActivity}
                 footer={[

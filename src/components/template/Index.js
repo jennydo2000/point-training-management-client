@@ -1,15 +1,17 @@
-import {useEffect, useRef, useState} from "react";
+import {useEffect, useState} from "react";
 import request from "../../utils/request";
 import List from "./List";
-import {Button, Input, Modal} from "antd";
+import {Button, Input, Modal, Space} from "antd";
 import Form from "./Form";
 import Title from "antd/es/typography/Title";
-import {UndoOutlined} from "@ant-design/icons";
+import {FileAddFilled, PlusOutlined, UndoOutlined} from "@ant-design/icons";
+import Import from "./Import";
 
 const modalType = {
     CREATE: 0,
     EDIT: 1,
     DELETE: 2,
+    IMPORT: 3,
 }
 
 function Index(props) {
@@ -21,6 +23,7 @@ function Index(props) {
     const [showModal, setShowModal] = useState(null);
     const [errors, setErrors] = useState({});
     const [options, setOptions] = useState({});
+    const [importErrors, setImportErrors] = useState([]);
 
     useEffect(async () => {
         setData((await getData()).data);
@@ -49,6 +52,7 @@ function Index(props) {
         setShowModal(null);
         setDataIndex(-1);
         setErrors([]);
+        setImportErrors([]);
     }
 
     const handleCreate = async (values) => {
@@ -93,12 +97,36 @@ function Index(props) {
             .catch(error => {});
     }
 
+    const handleImport = async (rows) => {
+        await request.post(`${props.route}/import`, rows)
+            .then(res => {
+                data.data = [ ...res.data.reverse(), ...data.data];
+                setData(data);
+                close();
+            })
+            .catch(err => {
+                const errors = err.response.data.errors.map(err => {
+                    const error = err.param.replace("[", "").replace("]", "").split(".");
+                    return {
+                        index: parseInt(error[0]),
+                        key: error[1],
+                        message: err.msg,
+                    }
+                });
+                setImportErrors(errors);
+            });
+    }
+
     return (
         <>
-            <div style={{display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 10}}>
-                <Title style={{textAlign: "center"}}>{props.name}</Title>
-                <Button onClick={() => setShowModal(modalType.CREATE)}>Thêm mới</Button>
-                <div style={{display: "flex", alignItems: "center", marginTop: 10}}>
+            <Space direction="vertical" style={{width: "100%", alignItems: "center", marginBottom: 10}}>
+                <Title style={{textAlign: "center", marginBottom: 0}}>{props.name}</Title>
+                <Space>
+                    <Button onClick={() => setShowModal(modalType.CREATE)} icon={<PlusOutlined/>}>Thêm mới</Button>
+                    {props.importColumns && props.importColumns.length > 0 && <Button onClick={() => setShowModal(modalType.IMPORT)} icon={<FileAddFilled/>}>Nhập danh sách</Button>}
+                    {props.buttons}
+                </Space>
+                <div style={{display: "flex", alignItems: "center"}}>
                     <Input.Search
                         value={keyword}
                         placeholder="Tìm kiếm..."
@@ -108,7 +136,7 @@ function Index(props) {
                     />
                     {keyword && <Button icon={<UndoOutlined/>} onClick={clearSearch}/>}
                 </div>
-            </div>
+            </Space>
 
             <List
                 data={data.data}
@@ -126,6 +154,7 @@ function Index(props) {
             <Modal
                 title={`Thêm ${props.name}`}
                 destroyOnClose
+                centered
                 visible={showModal === modalType.CREATE}
                 onCancel={close}
                 footer={
@@ -140,6 +169,7 @@ function Index(props) {
             <Modal
                 title={`Chỉnh sửa ${props.name}`}
                 destroyOnClose
+                centered
                 visible={showModal === modalType.EDIT}
                 onCancel={close}
                 footer={
@@ -157,6 +187,7 @@ function Index(props) {
             <Modal
                 title={`Xóa ${props.name}`}
                 destroyOnClose
+                centered
                 visible={showModal === modalType.DELETE}
                 onCancel={close}
                 footer={[
@@ -176,7 +207,27 @@ function Index(props) {
 
                 ]}
             >
+                Nhấn nút xóa để xác nhận xóa
+            </Modal>
 
+            <Modal
+                title={`Nhập ${props.name}`}
+                width={"100vw"}
+                destroyOnClose
+                centered
+                visible={showModal === modalType.IMPORT}
+                onCancel={close}
+                footer={[
+                    <Button
+                        key="back"
+                        onClick={close}
+                    >
+                        Đóng
+                    </Button>
+
+                ]}
+            >
+                <Import options={options} errors={importErrors} columns={props.importColumns} onInsert={handleImport}/>
             </Modal>
         </>
     );
@@ -185,7 +236,9 @@ function Index(props) {
 Index.defaultProps = {
     route: "",
     name: "",
+    buttons: [],
     columns: [],
+    importColumns: [],
     preCreate: () => {},
     preUpdate: () => {},
     createForm: [],

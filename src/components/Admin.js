@@ -1,4 +1,4 @@
-import {Col, Layout, Menu, Row, Slider} from "antd";
+import {Col, Layout, Menu, Row, Slider, Typography} from "antd";
 import {Content, Footer, Header} from "antd/es/layout/layout";
 import Sider from "antd/es/layout/Sider";
 import {useNavigate, Routes, Route} from "react-router-dom";
@@ -17,6 +17,8 @@ import TitleActivity from "./TitleActivity";
 import StudentPoint from "./StudentPoint";
 import Point from "./Point";
 import {BarsOutlined, BookFilled, UserOutlined} from "@ant-design/icons";
+import "./Admin.css";
+import ActivityType from "./ActivityType";
 
 function Admin() {
     const navigate = useNavigate();
@@ -26,7 +28,7 @@ function Admin() {
     }
 
     return (
-        <Layout>
+        <Layout className="root">
             <Sider>
                 <Menu
                     defaultSelectedKeys={['/users']}
@@ -41,7 +43,7 @@ function Admin() {
             </Sider>
             <Layout>
                 <Header>Header</Header>
-                <Content>
+                <Content className="main">
                     <Routes>
                         <Route path="/users"element={<User/>}/>
                         <Route path="/departments"element={<Department/>}/>
@@ -50,6 +52,7 @@ function Admin() {
                         <Route path="/students"element={<Student/>}/>
                         <Route path="/years"element={<Year/>}/>
                         <Route path="/semesters"element={<Semester/>}/>
+                        <Route path="/activity_types"element={<ActivityType/>}/>
                         <Route path="/activities"element={<Activity/>}/>
                         <Route path="/attendance"element={<Attendance/>}/>
                         <Route path="/sheets"element={<Sheet/>}/>
@@ -59,7 +62,7 @@ function Admin() {
                         <Route path="/test"element={<Test/>}/>
                     </Routes>
                 </Content>
-                <Footer>Footer</Footer>
+                <Typography style={{textAlign: "center", marginTop: 10, marginBottom: 10}}>@2022 Hệ thống quản lý điểm rèn luyện sinh viên tại UDCK</Typography>
             </Layout>
         </Layout>
     );

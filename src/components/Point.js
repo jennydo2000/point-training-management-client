@@ -4,6 +4,9 @@ import {useEffect, useState} from "react";
 import {convertTitles} from "./TitleActivity";
 import request from "../utils/request";
 import Text from "antd/es/typography/Text";
+import {formatDate} from "../utils/functions";
+import FullHeightTable from "./elemtents/FullHeightTable";
+import Title from "antd/es/typography/Title";
 
 const markToString = (mark) => {
     switch (mark) {
@@ -35,37 +38,42 @@ const renderPoint = (point) => {
 
 const calculatePoint = (thirdTitleActivity) => {
     if (thirdTitleActivity.type !== "third") return "";
+    if (thirdTitleActivity.title_activities.length === 0) return thirdTitleActivity.max_point;
     let point = thirdTitleActivity.title_activities.reduce((point, titleActivity) => {
         const activity = titleActivity.activity;
-        if (!activity.student_activity.value) return point;
+        if (!activity.student_activity) return point;
         const studentActivity = activity.student_activity;
-        if (activity.type === "CHECK")
-            return point + titleActivity.point[0];
+        const studentValue = studentActivity.value || activity.default_value || 0;
+        if (activity.type === "CHECK") {
+            if (studentValue === 1)
+                return point + titleActivity.point[0];
+            else return point;
+        }
         else if (activity.type === "COUNT") {
-            let currentPoint = studentActivity.value * titleActivity.point[0];
+            let currentPoint = studentValue * titleActivity.point[0];
             titleActivity.options.map(option => {
                 switch (option.type) {
                     case "eq":
-                        if (studentActivity.value === parseInt(option.value)) currentPoint = option.point;
+                        if (studentValue === parseFloat(option.value)) currentPoint = parseFloat(option.point);
                         break;
                     case "gt":
-                        if (studentActivity.value > parseInt(option.value)) currentPoint = option.point;
+                        if (studentValue > parseFloat(option.value)) currentPoint = parseFloat(option.point);
                         break;
                     case "lt":
-                        if (studentActivity.value < parseInt(option.value)) currentPoint = option.point;
+                        if (studentValue < parseFloat(option.value)) currentPoint = parseFloat(option.point);
                         break;
                     case "gte":
-                        if (studentActivity.value >= parseInt(option.value)) currentPoint = option.point;
+                        if (studentValue >= parseFloat(option.value)) currentPoint = parseFloat(option.point);
                         break;
                     case "lte":
-                        if (studentActivity.value <= parseInt(option.value)) currentPoint = option.point;
+                        if (studentValue <= parseFloat(option.value)) currentPoint = parseFloat(option.point);
                         break;
                 }
             });
             return point + currentPoint;
         }
         else if (activity.type === "ENUM")
-            return point + titleActivity.point[studentActivity.value];
+            return point + titleActivity.point[studentValue];
         else return point;
     }, thirdTitleActivity.default_point);
     return Math.min(Math.max(point, 0), thirdTitleActivity.max_point);
@@ -104,11 +112,25 @@ function Point() {
             dataIndex: "dob",
             key: "dob",
             fixed: "left",
+            render: (text) => formatDate(text),
         },
         {
             title: "Điểm",
             dataIndex: "point",
             key: "point",
+        },
+        {
+            title: "Xếp loại",
+            dataIndex: "point",
+            key: "grade",
+            render: (text) => {
+                if (text >= 90) return "Xuất sắc";
+                else if (text >= 80) return "Tốt";
+                else if (text >= 65) return "Khá";
+                else if (text >= 50) return "Trung bình";
+                else if (text >= 35) return "Yếu";
+                else return "Kém";
+            }
         },
         {
             title: "Xem phiếu điểm",
@@ -160,7 +182,8 @@ function Point() {
 
     return (
         <>
-            <Table columns={columns} dataSource={students.data} pagination={false} sticky/>
+            <Title style={{textAlign: "center", marginBottom: 0}}>Xem điểm rèn luyện sinh viên</Title>
+            <FullHeightTable columns={columns} dataSource={students.data} pagination={false} sticky/>
         </>
     );
 }

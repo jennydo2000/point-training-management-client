@@ -1,14 +1,12 @@
 import Index from "./template/Index";
-import {Input} from "antd";
-import {Link, useParams, useSearchParams} from "react-router-dom";
-import request from "../utils/request";
+import {Link, useSearchParams} from "react-router-dom";
 
 const columns = [
     {
         title: "Tên",
         dataIndex: "name",
         key: "name",
-        render: (text, record) => <Link to={`/activities?semester=${record.id}`}>Học kỳ {text}</Link>
+        render: (text, record) => <Link to={`/activity_types?semester=${record.id}`}>Học kỳ {text}</Link>
     },
 ];
 
