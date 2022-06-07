@@ -1,6 +1,6 @@
 import {Button, Space, Table} from "antd";
-import {DeleteOutlined, EditOutlined} from "@ant-design/icons";
-import FullHeightTable from "../elemtents/FullHeightTable";
+import {CopyOutlined, DeleteOutlined, EditOutlined} from "@ant-design/icons";
+import FullHeightTable from "../elements/FullHeightTable";
 
 function List(props) {
     const columns = [
@@ -11,8 +11,10 @@ function List(props) {
             key: "action",
             render: (text, record, index) => (
                 <Space>
-                    <Button type="primary" icon={<EditOutlined/>} onClick={() => props.onEdit(record, index)}/>
-                    <Button type="primary" icon={<DeleteOutlined/>} danger onClick={() => props.onDelete(record, index)}/>
+                    {typeof props.buttons === "function" ? props.buttons(record, index) : props.buttons}
+                    {props.canCopy && <Button type="primary" icon={<CopyOutlined/>} onClick={() => props.onCopy(record, index)}></Button>}
+                    {props.canUpdate && <Button type="primary" icon={<EditOutlined/>} onClick={() => props.onUpdate(record, index)}/>}
+                    {props.canDelete && <Button type="primary" icon={<DeleteOutlined/>} danger onClick={() => props.onDelete(record, index)}/>}
                 </Space>
             ),
         },
@@ -24,10 +26,15 @@ function List(props) {
 }
 
 List.defaultProps = {
+    buttons: [],
     columns: [],
     data: [],
-    onEdit: () => {},
+    onUpdate: () => {},
     onDelete: () => {},
+    onCopy: () => {},
+    canCopy: false,
+    canEdit: false,
+    canCreate: false,
 }
 
 export default List;

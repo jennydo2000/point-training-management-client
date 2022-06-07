@@ -2,7 +2,7 @@ import {Button, Form, Input, Modal, Select, Space, Table, Typography} from "antd
 import {useEffect, useState} from "react";
 import request from "../utils/request";
 import {useSearchParams} from "react-router-dom";
-import {useForm} from "antd/es/form/Form";
+import {useForm} from "antd/lib/form/Form";
 import {DeleteFilled, DeleteOutlined, UploadOutlined} from "@ant-design/icons";
 
 function TitleActivityOld() {

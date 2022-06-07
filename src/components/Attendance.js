@@ -1,4 +1,4 @@
-import {Button, Input, Select, Space, Table, Tooltip} from "antd";
+import {Button, Input, PageHeader, Select, Space, Table, Tooltip} from "antd";
 import {DeleteOutlined, EditOutlined} from "@ant-design/icons";
 import {useEffect, useRef, useState} from "react";
 import request from "../utils/request";
@@ -7,15 +7,9 @@ import {Option} from "antd/es/mentions";
 import moment from "moment";
 import {formatDate} from "../utils/functions";
 import Title from "antd/es/typography/Title";
-import FullHeightTable from "./elemtents/FullHeightTable";
-
-const getActivityType = (id) => {
-    switch (id) {
-        case 1: return "tham gia";
-        case 2: return "nhận khen thưởng";
-        case 3: return "bị vi phạm";
-    }
-}
+import FullHeightTable from "./elements/FullHeightTable";
+import {getActivityType, getActivityTypeAction} from "./Activity";
+import CustomBreadcrumb from "./elements/CustomBreadcumb";
 
 const initColumns = [
     {
@@ -48,15 +42,30 @@ const initColumns = [
 ];
 
 function Attendance() {
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const activityId = searchParams.get("activity");
     const [data, setData] = useState({
         data: [],
     });
+    const [classes, setClasses] = useState({
+        data: [],
+    });
     const [columns, setColumns] = useState([]);
+    const [activity, setActivity] = useState({semester: {year: {}}});
 
     useEffect(async () => {
-        setData((await getData()).data);
-        const activities = (await getActivities()).data;
+        const classes = await getClasses()
+        setClasses(classes);
+        updateSearchParams("class", classes.data[0]?.id);
+        getAttendance(classes.data[0]?.id);
+        setActivity((await request.get(`/activities/${activityId}`)).data);
+    }, []);
+
+    const getAttendance = async (classId) => {
+        setData(await getData(classId));
+        let activities = {data: []};
+        if (activityId) activities.data = [(await getActivity(activityId))];
+        else activities = (await getActivities(searchParams.get("semester"), searchParams.get("activity_type"))).data;
         const newColumns = [...initColumns];
         activities.data.forEach(activity => {
             newColumns.push({
@@ -72,20 +81,67 @@ function Attendance() {
             });
         });
         setColumns(newColumns);
-    }, []);
-
-    const getData = async () => {
-        return await request.get("/attendance");
     }
 
-    const getActivities = async () => {
-        return await request.get(`/activities?semester=${searchParams.get("semester")}&type=all&activity_type=${searchParams.get("activity_type")}`);
+    const updateSearchParams = (key, value) => {
+        const params = {};
+        searchParams.forEach((value, key) => params[key] = value);
+        params[key] = value;
+        setSearchParams(params, {replace: true});
+    }
+
+    const getData = async (classId) => {
+        let _class = '';
+        if (classId) _class = `?class=${classId}`;
+        return (await request.get(`/attendance${_class}`)).data;
+    }
+
+    const getActivity = async (id) => {
+        return (await request.get(`/activities/${id}`)).data;
+    }
+
+    const getClasses = async () => {
+        return (await request.get(`/classes`)).data;
+    }
+
+    const getActivities = async (semesterId, activityTypeId) => {
+        return await request.get(`/activities?semester=${semesterId}&type=all&activity_type=${activityTypeId}`);
+    }
+
+    const selectClass = async (id) => {
+        updateSearchParams("class", id);
+        getAttendance(id);
     }
 
     return (
         <>
-            <Title style={{textAlign: "center"}}>Điểm danh</Title>
-            <FullHeightTable width="max-content" components={{body: {cell: EditableCell}}} columns={columns} dataSource={data.data} pagination={false} bordered/>
+            <PageHeader
+                style={{width: "100%", backgroundColor: "white", marginBottom: 10}}
+                title="Điểm danh"
+                breadcrumb={
+                    <CustomBreadcrumb routes={[
+                        {name: "Quản lý hoạt động", path: "/years"},
+                        {name: `Năm học ${activity.semester.year.name}`, path: `/semesters?year=${activity.semester.year.id}`},
+                        {name: `Học kỳ ${activity.semester.name}`, path: `/activity_types?semester=${activity.semester.id}`},
+                        {name: getActivityType(activity.activity_type_id), path: `/activities?activity_type=${activity.activity_type_id}&semester=${activity.semester.id}`},
+                        {name: activity.name, path: `/attendance?activity=${activity.id}`},
+                    ]} />
+                }
+                extra={
+                    <>
+                        <Space style={{width: "100%"}}>
+                            <span>Chọn lớp: </span>
+                            <Select style={{width: "200px"}} value={parseInt(searchParams.get("class"))} onChange={(value) => selectClass(value)}>
+                                <Option value={null}>Hiển thị tất cả</Option>
+                                {classes.data.map((_class, index) => 
+                                    <Option key={index} value={_class.id}>{_class.name}</Option>
+                                )}
+                            </Select>
+                        </Space>
+                    </>
+                }
+            />
+            <FullHeightTable width="max-content" components={{body: {cell: EditableCell}}} columns={columns} pagination={false} dataSource={data.data} bordered/>
         </>
     );
 }
@@ -100,6 +156,10 @@ const EditableCell = ({editable, activity, children, record,...restProps}) => {
             inputRef.current.focus();
         }
     }, [editing]);
+
+    useEffect(() => {
+        setStudent(record);
+    }, [record]);
 
     const toggleEditing = () => {
         setEditing(!editing);
@@ -150,8 +210,8 @@ const EditableCell = ({editable, activity, children, record,...restProps}) => {
                         onBlur={toggleEditing}
                         onChange={(value) => saveChange(record.id, activity.id, value)}
                     >
-                        <Select.Option value={0}>Không {getActivityType(activity.activity_type_id)}</Select.Option>
-                        <Select.Option value={1}>Có {getActivityType(activity.activity_type_id)}</Select.Option>
+                        <Select.Option value={0}>Không {getActivityTypeAction(activity.activity_type_id)}</Select.Option>
+                        <Select.Option value={1}>Có {getActivityTypeAction(activity.activity_type_id)}</Select.Option>
                     </Select>
                 );
             } else childNode = (
@@ -178,7 +238,7 @@ const EditableCell = ({editable, activity, children, record,...restProps}) => {
                     onClick={toggleEditing}
                     style={{fontStyle: !studentActivity?.value ? "italic" : "initial", minWidth: "100px"}}
                 >
-                    {studentActivity?.value ? `Có ${getActivityType(activity.activity_type_id)}` : `Không ${getActivityType(activity.activity_type_id)}`}
+                    {studentActivity?.value ? `Có ${getActivityTypeAction(activity.activity_type_id)}` : `Không ${getActivityTypeAction(activity.activity_type_id)}`}
                 </div>);
             else childNode = (
                 <div

@@ -1,17 +1,18 @@
 import {useEffect, useState} from "react";
 import request from "../../utils/request";
 import List from "./List";
-import {Button, Input, Modal, Space} from "antd";
+import {Button, Input, Modal, PageHeader, Space} from "antd";
 import Form from "./Form";
-import Title from "antd/es/typography/Title";
 import {FileAddFilled, PlusOutlined, UndoOutlined} from "@ant-design/icons";
 import Import from "./Import";
+import CustomBreadcrumb from "../elements/CustomBreadcumb";
 
 const modalType = {
     CREATE: 0,
     EDIT: 1,
     DELETE: 2,
     IMPORT: 3,
+    COPY: 4,
 }
 
 function Index(props) {
@@ -59,7 +60,6 @@ function Index(props) {
         values = props.preCreate(values) || values;
         await request.post(`${props.route}`, values)
             .then(async res => {
-                setErrors({});
                 data.data.unshift(res.data);
                 setData(JSON.parse(JSON.stringify(data)));
                 close();
@@ -75,7 +75,6 @@ function Index(props) {
         values = props.preUpdate(values) || values;
         await request.put(`${props.route}/${data.data[dataIndex].id}`, values)
             .then(async res => {
-                setErrors({});
                 data.data[dataIndex] = res.data;
                 setData(JSON.parse(JSON.stringify(data)));
                 close();
@@ -117,37 +116,73 @@ function Index(props) {
             });
     }
 
+    const handleCopy = async (index, values) => {
+
+        await request.post(`${props.route}/${data.data[index].id}/copy`, values)
+            .then(async res => {
+                data.data.unshift(res.data);
+                setData(JSON.parse(JSON.stringify(data)));
+                close();
+            })
+            .catch(err => {
+                const errors = err.response.data.errors.map(err => {
+                    const error = err.param.replace("[", "").replace("]", "").split(".");
+                    return {
+                        index: parseInt(error[0]),
+                        key: error[1],
+                        message: err.msg,
+                    }
+                });
+                setImportErrors(errors);
+            });
+    }
+
     return (
         <>
-            <Space direction="vertical" style={{width: "100%", alignItems: "center", marginBottom: 10}}>
-                <Title style={{textAlign: "center", marginBottom: 0}}>{props.name}</Title>
-                <Space>
-                    <Button onClick={() => setShowModal(modalType.CREATE)} icon={<PlusOutlined/>}>Thêm mới</Button>
-                    {props.importColumns && props.importColumns.length > 0 && <Button onClick={() => setShowModal(modalType.IMPORT)} icon={<FileAddFilled/>}>Nhập danh sách</Button>}
-                    {props.buttons}
-                </Space>
-                <div style={{display: "flex", alignItems: "center"}}>
-                    <Input.Search
-                        value={keyword}
-                        placeholder="Tìm kiếm..."
-                        style={{width: 200}}
-                        onChange={(e) => setKeyword(e.target.value)}
-                        onSearch={search}
-                    />
-                    {keyword && <Button icon={<UndoOutlined/>} onClick={clearSearch}/>}
-                </div>
-            </Space>
+            <PageHeader
+                style={{width: "100%", backgroundColor: "white", marginBottom: 10}}
+                title={props.name}
+                breadcrumb={
+                    <CustomBreadcrumb routes={props.routes} />
+                }
+                extra={
+                    <>
+                        <Button onClick={() => setShowModal(modalType.CREATE)} icon={<PlusOutlined/>}>Thêm mới</Button>
+                        {props.importColumns && props.importColumns.length > 0 && <Button onClick={() => setShowModal(modalType.IMPORT)} icon={<FileAddFilled/>}>Nhập danh sách</Button>}
+                        {props.buttons}
+                        <div style={{display: "flex", alignItems: "center"}}>
+                            <Input.Search
+                                value={keyword}
+                                placeholder="Tìm kiếm..."
+                                style={{width: 200}}
+                                onChange={(e) => setKeyword(e.target.value)}
+                                onSearch={search}
+                            />
+                            {keyword && <Button icon={<UndoOutlined/>} onClick={clearSearch}/>}
+                        </div>
+                    </>
+                }
+            />
 
             <List
                 data={data.data}
                 columns={props.columns}
-                onEdit={(record, index) => {
+                canCopy={Boolean(props.copyForm)}
+                canUpdate={Boolean(props.updateForm)}
+                canCreate={Boolean(props.createForm)}
+                canDelete={true}
+                onUpdate={(record, index) => {
                     setDataIndex(index);
                     setShowModal(modalType.EDIT);
                 }}
+                buttons={props.listButtons}
                 onDelete={(record, index) => {
                     setDataIndex(index);
                     setShowModal(modalType.DELETE);
+                }}
+                onCopy={(record, index) => {
+                    setDataIndex(index);
+                    setShowModal(modalType.COPY);
                 }}
             />
 
@@ -163,7 +198,7 @@ function Index(props) {
                     </Button>
                 }
             >
-                {showModal === modalType.CREATE && <Form form={props.createForm} options={options} errors={errors} onFinish={handleCreate}/>}
+                {showModal === modalType.CREATE && <Form form={props.createForm || []} options={options} errors={errors} onFinish={handleCreate}/>}
             </Modal>
 
             <Modal
@@ -181,7 +216,7 @@ function Index(props) {
                     </Button>
                 }
             >
-                {showModal !== null && dataIndex !== -1 && <Form form={props.updateForm} options={options} errors={errors} initialValues={data.data[dataIndex]} onFinish={handleUpdate} />}
+                {showModal !== null && dataIndex !== -1 && <Form form={props.updateForm || []} options={options} errors={errors} initialValues={data.data[dataIndex]} onFinish={handleUpdate} />}
             </Modal>
 
             <Modal
@@ -227,7 +262,32 @@ function Index(props) {
 
                 ]}
             >
-                <Import options={options} errors={importErrors} columns={props.importColumns} onInsert={handleImport}/>
+                <Import options={options} errors={importErrors} columns={props.importColumns || []} onInsert={handleImport}/>
+            </Modal>
+
+            <Modal
+                title={`Sao chép ${props.name}`}
+                destroyOnClose
+                centered
+                visible={showModal === modalType.COPY}
+                onCancel={close}
+                footer={[
+                    <Button
+                        key="back"
+                        onClick={close}
+                    >
+                        Đóng
+                    </Button>,
+
+                ]}
+            >
+                <Form
+                    form={props.copyForm || []}
+                    options={options}
+                    errors={errors}
+                    initialValues={data.data[dataIndex]}
+                    onFinish={values => handleCopy(dataIndex, values)}
+                />
             </Modal>
         </>
     );
@@ -237,12 +297,15 @@ Index.defaultProps = {
     route: "",
     name: "",
     buttons: [],
+    listButtons: [],
     columns: [],
     importColumns: [],
+    routes: [],
     preCreate: () => {},
     preUpdate: () => {},
-    createForm: [],
-    updateForm: [],
+    createForm: null,
+    updateForm: null,
+    copyForm: null,
 }
 
 export default Index;

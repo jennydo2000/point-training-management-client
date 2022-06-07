@@ -1,17 +1,31 @@
 import Index from "./template/Index";
-import {Link, useSearchParams} from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import request from "../utils/request";
 
 const columns = [
     {
         title: "Tên",
         dataIndex: "name",
         key: "name",
-        render: (text, record) => <Link to={`/activity_types?semester=${record.id}`}>Học kỳ {text}</Link>
+        render: (text, record) => (
+            <Link to={`/activity_types?semester=${record.id}`}>
+                Học kỳ {text}
+            </Link>
+        ),
     },
 ];
 
 function Major() {
     const [searchParams] = useSearchParams();
+    const yearId = searchParams.get("year");
+
+    const [year, setYear] = useState({});
+
+    useEffect(async () => {
+        setYear((await request.get(`/years/${yearId}`)).data);
+    }, []);
+
     const form = [
         {
             label: "Tên",
@@ -22,12 +36,23 @@ function Major() {
             name: "year_id",
             type: "select",
             options: "years",
-            initialValue: parseInt(searchParams.get("year")),
+            initialValue: parseInt(yearId),
         },
     ];
 
     return (
-        <Index route="/semesters" params={{year: searchParams.get("year")}} name="Học kỳ" columns={columns} createForm={form} updateForm={form}/>
+        <Index
+            route="/semesters"
+            params={{ year: yearId }}
+            name="Học kỳ"
+            routes={[
+                {name: "Quản lý hoạt động", path: "/years"},
+                {name: `Năm học ${year.name}`, path: `/semester?year=${yearId}`},
+            ]}
+            columns={columns}
+            createForm={form}
+            updateForm={form}
+        />
     );
 }
 

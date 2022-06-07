@@ -1,11 +1,13 @@
 import {useEffect, useState} from "react";
 import {useNavigate, useSearchParams} from "react-router-dom";
-import {useForm} from "antd/es/form/Form";
 import request from "../utils/request";
-import {AutoComplete, Button, Form, Input, Modal, Select, Space, Table, Typography} from "antd";
-import {DeleteFilled} from "@ant-design/icons";
+import {Button, Form, Input, Modal, PageHeader, Select, Space, Table, Typography} from "antd";
+import {DeleteFilled, MinusOutlined} from "@ant-design/icons";
 import Title from "antd/es/typography/Title";
-import FullHeightTable from "./elemtents/FullHeightTable";
+import FullHeightTable from "./elements/FullHeightTable";
+import {getActivityTypeAction} from "./Activity";
+import {useForm} from "antd/lib/form/Form";
+import CustomBreadcrumb from "./elements/CustomBreadcumb";
 
 export const convertTitles = (primaryTitles) => {
     const alphabet = "abcdefghijklmnopqrstuvwxyz";
@@ -79,12 +81,12 @@ function TitleActivity() {
     const [data, setData] = useState({
         data: [],
     });
-    const [sheet, setSheet] = useState({});
+    const [sheet, setSheet] = useState({semester: {year: {}}});
     const [thirdTitleActivity, setThirdTitleActivity] = useState(null);
 
     useEffect(async () => {
         const newData = (await getData());
-        setSheet(newData.data.sheet);
+        setSheet(await getSheet());
         const convertedData = convertTitles(newData.data.primaryTitles);
         data.data = convertedData;
         setData({...data});
@@ -92,6 +94,10 @@ function TitleActivity() {
 
     const getData = async () => {
         return (await request.get(`/title_activities?sheet=${searchParams.get("sheet")}`)).data;
+    }
+
+    const getSheet = async () => {
+        return (await request.get(`/sheets/${searchParams.get("sheet")}`)).data;
     }
 
     const openThirdTitleActivity = (record) => {
@@ -119,9 +125,20 @@ function TitleActivity() {
 
     return (
         <>
-            <Title style={{textAlign: "center", marginBottom: 0}}>Phiếu chấm điểm rèn luyện sinh viên</Title>
-
-            <Button onClick={() => navigate(`/points?sheet=${searchParams.get("sheet")}`)}>Xem điểm rèn luyện sinh viên</Button>
+            <PageHeader
+                style={{width: "100%", backgroundColor: "white", marginBottom: 10}}
+                title="Cấu hình phiếu điểm"
+                breadcrumb={
+                    <CustomBreadcrumb routes={[
+                        {name: "Quản lý hoạt động", path: "/years"},
+                        {name: `Năm học ${sheet.semester.year.name}`, path: `/semesters?year=${sheet.semester.year.id}`},
+                        {name: `Học kỳ ${sheet.semester.name}`, path: `/activity_types?semester=${sheet.semester.id}`},
+                        {name: "Phiếu điểm", path: `/sheets?semester=${sheet.semester.id}`},
+                        {name: `${sheet.name}`, path: `/points?sheet=${sheet.id}`},
+                        {name: `Cấu hình phiếu điểm`, path: `/title_activities?sheet=${sheet.id}`},
+                    ]} />
+                }
+            />
 
             <FullHeightTable
                 columns={columns}
@@ -179,7 +196,7 @@ const ThirdTitleActivity = (props) => {
             key: "name",
         },
         {
-            title: "Tùy chỉnh tính điểm",
+            title: "Điểm",
             dataIndex: "point",
             key: "point",
             render: (text, record) => <TitleActivityItem title={record}/>,
@@ -347,66 +364,72 @@ const TitleActivityItem = (props) => {
     if (title.activity.type === "ENUM") {
         render.push(
             props.title.activity.accepts.map((accept, index) =>
-                <Form.Item label={accept}>
+                <Space style={{whiteSpace: "nowrap"}}>
+                    {accept}
                     <Input
                         type="number"
-                        style={{width: "100px"}}
+                        style={{width: "65px"}}
                         defaultValue={props.title.point[index] || 0}
                         onChange={(e) => changePoint(index, e.target.value)}
-                    />
-                </Form.Item>
+                    /> điểm.
+                </Space>
             )
         );
-    } else render.push(
-        <div> Điểm{" "}
-            <Input
-                style={{width: "100px"}}
-                defaultValue={props.title.point}
-                onChange={(e) => changePoint(0, e.target.value)}
-            />
-        </div>
-    );
+    } else if (title.activity.type === "COUNT" || title.activity.type === "POINT") {
+        if (title.activity.type === "COUNT") {
+            render.push(
+                <Space style={{whiteSpace: "nowrap"}}>
+                    <span>Mỗi lần {getActivityTypeAction(title.activity.activity_type_id)}</span>
+                    <Input
+                        type="number"
+                        style={{width: "65px"}}
+                        defaultValue={props.title.point}
+                        onChange={(e) => changePoint(0, e.target.value)}
+                    /> điểm.
+                </Space>
+            );
+        }
 
-    render.push(
-        title.options?.map((option, index) => (
-            <div>
-                Nếu số lần{" "}
-                <Select
-                    value={option.type}
-                    style={{width: "150px"}}
-                    onChange={(value) => changeCondition(index, "type", value)}
-                >
-                    {[
-                        {id: "eq", name: "Bằng"},
-                        {id: "gt", name: "Lớn hơn"},
-                        {id: "lt", name: "Nhỏ hơn"},
-                        {id: "gte", name: "Lớn hơn hoặc bằng"},
-                        {id: "lte", name: "Nhỏ hơn hoặc bằng"},
-                    ].map((item, index) => <Select.Option key={index} value={item.id}>{item.name}</Select.Option>)}
-                </Select>
-                {" "}
-                <Input
-                    style={{width: "60px"}}
-                    defaultValue={option.value}
-                    onChange={(e) => changeCondition(index, "value", e.target.value)}
-                />
-                thì thay bằng
-                <Input
-                    style={{width: "60px"}}
-                    defaultValue={option.point}
-                    onChange={(e) => changeCondition(index, "point", e.target.value)}
-                />
-                {" "}
-                <Button
-                    danger
-                    icon={<DeleteFilled/>}
-                    onClick={() => deleteCondition(index)}
-                />
-            </div>
-        ))
-    );
+        render.push(
+            title.options?.map((option, index) => (
+                <Space size="small" style={{whiteSpace: "nowrap"}}>
+                    <Button
+                        size="small"
+                        danger
+                        icon={<MinusOutlined/>}
+                        onClick={() => deleteCondition(index)}
+                    />
+                    {title.activity.type === "COUNT" ? "Nếu số lần" : "Nếu đạt điểm"}
+                    <Select
+                        value={option.type}
+                        style={{width: "65px"}}
+                        onChange={(value) => changeCondition(index, "type", value)}
+                    >
+                        {[
+                            {id: "eq", name: "="},
+                            {id: "gt", name: ">"},
+                            {id: "lt", name: "<"},
+                            {id: "gte", name: ">="},
+                            {id: "lte", name: "<="},
+                        ].map((item, index) => <Select.Option key={index} value={item.id}>{item.name}</Select.Option>)}
+                    </Select>
+                    <Input
+                        type="number"
+                        style={{width: "65px"}}
+                        defaultValue={option.value}
+                        onChange={(e) => changeCondition(index, "value", e.target.value)}
+                    />
+                    {title.activity.type === "COUNT" ? "thì thay bằng" : "thì chấm"}
+                    <Input
+                        type="number"
+                        style={{width: "65px"}}
+                        defaultValue={option.point}
+                        onChange={(e) => changeCondition(index, "point", e.target.value)}
+                    /> điểm.
+                </Space>
+            ))
+        );
 
-    if (title.activity.type === "COUNT")
         render.push(
             <Button
                 onClick={addCondition}
@@ -414,6 +437,30 @@ const TitleActivityItem = (props) => {
                 Thêm điều kiện
             </Button>
         );
+    } else if (title.activity.type === "CHECK") {
+        render.push(
+            <Space direction="vertical" style={{whiteSpace: "nowrap"}}>
+                <Space>
+                    <span>Có {getActivityTypeAction(title.activity.activity_type_id)}</span>
+                    <Input
+                        type="number"
+                        style={{width: "70px"}}
+                        defaultValue={props.title.point[1] || 0}
+                        onChange={(e) => changePoint(1, e.target.value)}
+                    /> điểm.
+                </Space>
+                <Space>
+                    <span>Không {getActivityTypeAction(title.activity.activity_type_id)}</span>
+                    <Input
+                        type="number"
+                        style={{width: "70px"}}
+                        defaultValue={props.title.point[0] || 0}
+                        onChange={(e) => changePoint(0, e.target.value)}
+                    /> điểm.
+                </Space>
+            </Space>
+        );
+    }
 
     return <Space direction="vertical">{render}</Space>;
 }

@@ -1,13 +1,15 @@
 import Index from "./template/Index";
-import {Input} from "antd";
-import {Link} from "react-router-dom";
+import { Input } from "antd";
+import { Link } from "react-router-dom";
 
 const columns = [
     {
         title: "Tên",
         dataIndex: "name",
         key: "name",
-        render: (text, record) => <Link to={`/majors?department=${record.id}`}>{text}</Link>
+        render: (text, record) => (
+            <Link to={`/majors?department=${record.id}`}>{text}</Link>
+        ),
     },
 ];
 
@@ -20,7 +22,16 @@ const form = [
 
 function Department() {
     return (
-        <Index route="/departments" name="Khoa" columns={columns} createForm={form} updateForm={form}/>
+        <Index
+            route="/departments"
+            name="Khoa"
+            routes={[
+                {name: "Quản lý sinh viên", path: "/departments"},
+            ]}
+            columns={columns}
+            createForm={form}
+            updateForm={form}
+        />
     );
 }
 

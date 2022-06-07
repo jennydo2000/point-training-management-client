@@ -16,7 +16,7 @@ import Attendance from "./Attendance";
 import TitleActivity from "./TitleActivity";
 import StudentPoint from "./StudentPoint";
 import Point from "./Point";
-import {BarsOutlined, BookFilled, UserOutlined} from "@ant-design/icons";
+import {BarsOutlined, BookFilled, PieChartOutlined, UserOutlined} from "@ant-design/icons";
 import "./Admin.css";
 import ActivityType from "./ActivityType";
 
@@ -30,20 +30,24 @@ function Admin() {
     return (
         <Layout className="root">
             <Sider>
+                <div style={{height: 64, display: "flex", justifyContent: "center", alignItems: "center"}}>
+                    <Typography.Title level={3} style={{color: "white"}}>ADMIN</Typography.Title>
+                </div>
                 <Menu
+                    theme="dark"
                     defaultSelectedKeys={['/users']}
                     onClick={handleClickMenu}
                 >
-                    <Menu.Item key="/users" icon={<UserOutlined/>}>Tài khoản</Menu.Item>
-                    <Menu.Item key="/departments" icon={<UserOutlined/>}>Sinh viên</Menu.Item>
+                    <Menu.Item key="/" icon={<PieChartOutlined />}>Thống kê</Menu.Item>
+                    <Menu.Item key="/users" icon={<UserOutlined/>}>Quản lý tài khoản</Menu.Item>
+                    <Menu.Item key="/departments" icon={<UserOutlined/>}>Quản lý sinh viên</Menu.Item>
                     <Menu.Item key="/years" icon={<BarsOutlined/>}>Hoạt động từng học kỳ</Menu.Item>
-                    <Menu.Item key="/activities" icon={<BarsOutlined/>}>Hoạt động thường niên</Menu.Item>
-                    <Menu.Item key="/sheets" icon={<BookFilled/>}>Phiếu điểm</Menu.Item>
+                    <Menu.Item key="/activity_types" icon={<BarsOutlined/>}>Hoạt động thường niên</Menu.Item>
                 </Menu>
             </Sider>
             <Layout>
                 <Header>Header</Header>
-                <Content className="main">
+                <Content className="main" style={{padding: 10}}>
                     <Routes>
                         <Route path="/users"element={<User/>}/>
                         <Route path="/departments"element={<Department/>}/>

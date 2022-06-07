@@ -11,8 +11,8 @@ function FullHeightTable(props) {
     }, [ref]);
 
     return (
-        <div ref={ref} style={{width: "100%", flexGrow: 1}}>
-            <Table scroll={{x: props.width, y: height}} {...props}/>
+        <div ref={ref} style={{width: "100%", flexGrow: 1, backgroundColor: "white"}}>
+            <Table scroll={{x: props.width, y: height - (props.pagination === false ? 0 : 48)}} {...props}/>
         </div>
     );
 }

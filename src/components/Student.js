@@ -3,6 +3,8 @@ import {DatePicker, Input} from "antd";
 import {Link, useParams, useSearchParams} from "react-router-dom";
 import {excelDateToJSDate} from "../utils/functions";
 import moment from "moment";
+import { useEffect, useState } from "react";
+import request from "../utils/request";
 
 const columns = [
     {
@@ -110,6 +112,13 @@ const importColumns = [
 
 function Class() {
     const [searchParams] = useSearchParams();
+    const classId = searchParams.get("class");
+    const [_class, setClass] = useState({major: {department: {}}});
+
+    useEffect(async () => {
+        setClass((await request.get(`/classes/${classId}`)).data);
+    }, []);
+
     const form = [
         {
             label: "MSSV",
@@ -174,6 +183,12 @@ function Class() {
             route="/students"
             params={{class: searchParams.get("class")}}
             name="Sinh viên"
+            routes={[
+                {name: "Quản lý sinh viên", path: "/departments"},
+                {name: `Khoa ${_class.major.department.name}`, path: `/majors?department=${_class.major.department.id}`},
+                {name: `Ngành ${_class.major.name}`, path: `/classes?major=${_class.major.id}`},
+                {name: `Lớp ${_class.name}`, path: `/students?class=${_class.id}`},
+            ]}
             columns={columns}
             importColumns={importColumns}
             createForm={form}
