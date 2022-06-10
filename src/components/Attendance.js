@@ -56,12 +56,11 @@ function Attendance() {
     useEffect(async () => {
         const classes = await getClasses()
         setClasses(classes);
-        updateSearchParams("class", classes.data[0]?.id);
-        getAttendance(classes.data[0]?.id);
+        getAttendance();
         setActivity((await request.get(`/activities/${activityId}`)).data);
     }, []);
 
-    const getAttendance = async (classId) => {
+    const getAttendance = async (classId = null) => {
         setData(await getData(classId));
         let activities = {data: []};
         if (activityId) activities.data = [(await getActivity(activityId))];
@@ -90,7 +89,7 @@ function Attendance() {
         setSearchParams(params, {replace: true});
     }
 
-    const getData = async (classId) => {
+    const getData = async (classId = null) => {
         let _class = '';
         if (classId) _class = `?class=${classId}`;
         return (await request.get(`/attendance${_class}`)).data;
@@ -131,7 +130,7 @@ function Attendance() {
                     <>
                         <Space style={{width: "100%"}}>
                             <span>Chọn lớp: </span>
-                            <Select style={{width: "200px"}} value={parseInt(searchParams.get("class"))} onChange={(value) => selectClass(value)}>
+                            <Select style={{width: "200px"}} value={parseInt(searchParams.get("class")) || null} onChange={(value) => selectClass(value)}>
                                 <Option value={null}>Hiển thị tất cả</Option>
                                 {classes.data.map((_class, index) => 
                                     <Option key={index} value={_class.id}>{_class.name}</Option>
@@ -141,7 +140,7 @@ function Attendance() {
                     </>
                 }
             />
-            <FullHeightTable width="max-content" components={{body: {cell: EditableCell}}} columns={columns} pagination={false} dataSource={data.data} bordered/>
+            <FullHeightTable width="max-content" components={{body: {cell: EditableCell}}} columns={columns} dataSource={data.data} bordered/>
         </>
     );
 }

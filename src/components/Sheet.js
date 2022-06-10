@@ -19,8 +19,7 @@ const columns = [
         title: "Học kỳ",
         dataIndex: "",
         key: "semester",
-        render: (text, record) =>
-            `Học kỳ ${record.semester?.name} năm học ${record.semester?.year?.name}`,
+        render: (text, record) => record.semester ? `Học kỳ ${record.semester?.name} năm học ${record.semester?.year?.name}` : "Không",
     },
 ];
 
@@ -57,8 +56,7 @@ function Department() {
             name: "semester_id",
             type: "select",
             options: "semesters",
-            labelOption: (item) =>
-                `Học kỳ ${item.name} năm học ${item.year.name}`,
+            labelOption: (item) => `Học kỳ ${item.name} năm học ${item.year.name}`,
             initialValue: parseInt(searchParams.get("semester")),
         },
     ];
@@ -73,8 +71,7 @@ function Department() {
             name: "semester_id",
             type: "select",
             options: "semesters",
-            labelOption: (item) =>
-                `Học kỳ ${item.name} năm học ${item.year.name}`,
+            labelOption: (item) => `Học kỳ ${item.name} năm học ${item.year.name}`,
             initialValue: parseInt(searchParams.get("semester")),
         },
     ];

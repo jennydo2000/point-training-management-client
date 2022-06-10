@@ -13,11 +13,11 @@ import { convertTitles } from "./TitleActivity";
 import request from "../utils/request";
 import Text from "antd/es/typography/Text";
 import { formatDate } from "../utils/functions";
-import FullHeightTable from "./elements/FullHeightTable";
-import Title from "antd/es/typography/Title";
 import { calculatePoint } from "./StudentPoint";
 import { Option } from "antd/es/mentions";
 import CustomBreadcrumb from "./elements/CustomBreadcumb";
+import { SettingOutlined } from "@ant-design/icons";
+import List from "./template/List";
 
 const markToString = (mark) => {
     switch (mark) {
@@ -129,27 +129,9 @@ function Point() {
                 else return "Kém";
             },
         },
-        {
-            title: "Xem phiếu điểm",
-            dataIndex: "point",
-            key: "point",
-            render: (text, record) => (
-                <Button
-                    onClick={() =>
-                        navigate(
-                            `/point?sheet=${searchParams.get(
-                                "sheet"
-                            )}&student=${record.id}`
-                        )
-                    }
-                >
-                    Xem phiếu điểm
-                </Button>
-            ),
-        },
     ]);
     const [searchParams, setSearchParams] = useSearchParams();
-    const sheetId = searchParams.get("sheet");
+    const semesterId = searchParams.get("semester");
     const navigate = useNavigate();
     const [data, setData] = useState({
         data: [],
@@ -157,57 +139,17 @@ function Point() {
     const [classes, setClasses] = useState({
         data: [],
     });
-    const [students, setStudents] = useState({
-        data: [],
-    });
-    const [sheet, setSheet] = useState({ semester: {year: {}} });
+    const [semester, setSemester] = useState({ year: {} });
 
     useEffect(async () => {
         const classes = await getClasses();
         setClasses(classes);
-        updateSearchParams("class", classes.data[0]?.id);
-        getPoint(classes.data[0]?.id);
-        setSheet((await request.get(`/sheets/${sheetId}`)).data);
+        getPoint();
+        setSemester((await request.get(`/semesters/${semesterId}`)).data);
     }, []);
 
     const getPoint = async (classId = null) => {
-        const newData = await getData(classId);
-        const convertedTitles = convertTitles(newData.data);
-        const convertedStudents = convertStudents(
-            newData.students,
-            convertedTitles
-        );
-        setStudents({ data: convertedStudents });
-        data.data = convertedTitles;
-        setData({ ...data });
-    };
-
-    const convertStudents = (students, convertTitles) => {
-        const convertedStudents = students.map((student) => {
-            student.point = 0;
-            convertTitles.forEach((title) => {
-                if (title.type === "third") {
-                    const copiedThirdTitle = JSON.parse(JSON.stringify(title));
-                    copiedThirdTitle.title_activities.forEach(
-                        (title_activity) => {
-                            const student_activity =
-                                title_activity.activity.student_activities.find(
-                                    (student_activity) =>
-                                        student.id ===
-                                        student_activity.student_id
-                                );
-                            delete title_activity.activity.student_activities;
-                            title_activity.activity.student_activity =
-                                student_activity || {};
-                        }
-                    );
-                    const point = calculatePoint(copiedThirdTitle);
-                    student.point += point;
-                }
-            });
-            return student;
-        });
-        return convertedStudents;
+        setData(await getData(classId));
     };
 
     const updateSearchParams = (key, value) => {
@@ -220,11 +162,8 @@ function Point() {
     const getData = async (classId) => {
         let _class = "";
         if (classId) _class = `&class=${classId}`;
-        return (
-            await request.get(
-                `/point?sheet=${searchParams.get("sheet")}${_class}`
-            )
-        ).data;
+        return (await request.get(`/point?semester=${semesterId}${_class}`))
+            .data;
     };
 
     const getClasses = async () => {
@@ -243,24 +182,34 @@ function Point() {
                     backgroundColor: "white",
                     marginBottom: 10,
                 }}
-                title="Bảng điểm"
+                title="Thống kê điểm"
                 breadcrumb={
-                    <CustomBreadcrumb routes={[
-                        {name: "Quản lý hoạt động", path: "/years"},
-                        {name: `Năm học ${sheet.semester.year.name}`, path: `/semesters?year=${sheet.semester.year.id}`},
-                        {name: `Học kỳ ${sheet.semester.name}`, path: `/activity_types?semester=${sheet.semester.id}`},
-                        {name: "Phiếu điểm", path: `/sheets?semester=${sheet.semester.id}`},
-                        {name: `${sheet.name}`, path: `/points?sheet=${sheet.id}`},
-                    ]} />
+                    <CustomBreadcrumb
+                        routes={[
+                            { name: "Quản lý hoạt động", path: "/years" },
+                            {
+                                name: `Năm học ${semester.year.name}`,
+                                path: `/semesters?year=${semester.year.id}`,
+                            },
+                            {
+                                name: `Học kỳ ${semester.name}`,
+                                path: `/activity_types?semester=${semester.id}`,
+                            },
+                            {
+                                name: "Điểm",
+                                path: `/points?semester=${semester.id}`,
+                            },
+                        ]}
+                    />
                 }
                 extra={
                     <>
                         <Button
+                            type="primary"
+                            icon={<SettingOutlined />}
                             onClick={() =>
                                 navigate(
-                                    `/title_activities?sheet=${searchParams.get(
-                                        "sheet"
-                                    )}`
+                                    `/title_activities?semester=${semesterId}`
                                 )
                             }
                         >
@@ -286,11 +235,20 @@ function Point() {
                     </>
                 }
             />
-            <FullHeightTable
+            <List
                 columns={columns}
-                dataSource={students.data}
-                pagination={false}
-                sticky
+                data={data.data}
+                buttons={(record) => [
+                    <Button
+                        onClick={() =>
+                            navigate(
+                                `/point?semester=${semesterId}&student=${record.id}`
+                            )
+                        }
+                    >
+                        Xem phiếu điểm
+                    </Button>,
+                ]}
             />
         </>
     );

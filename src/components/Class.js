@@ -6,23 +6,20 @@ import request from "../utils/request";
 
 const columns = [
     {
-        title: "Tên",
+        title: "Tên lớp học",
         dataIndex: "name",
         key: "name",
-        render: (text, record) => (
-            <Link to={`/students?class=${record.id}`}>{text}</Link>
-        ),
+    },
+    {
+        title: "Ngành học",
+        dataIndex: ["major", "name"],
+        key: "major_name",
     },
 ];
 
 function Class() {
     const [searchParams] = useSearchParams();
     const majorId = searchParams.get("major");
-    const [major, setMajor] = useState({department: {}});
-
-    useEffect(async () => {
-        setMajor((await request.get(`/majors/${majorId}`)).data);
-    }, []);
 
     const form = [
         {
@@ -44,9 +41,7 @@ function Class() {
             params={{ major: majorId }}
             name="lớp"
             routes={[
-                {name: "Quản lý sinh viên", path: "/departments"},
-                {name: `Khoa ${major.department.name}`, path: `/majors?department=${major.department.id}`},
-                {name: `Ngành ${major.name}`, path: `/classes?major=${major.id}`},
+                {name: "Quản lý lớp học", path: "/classes"},
             ]}
             columns={columns}
             createForm={form}

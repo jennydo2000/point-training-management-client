@@ -1,7 +1,9 @@
 import axios from "axios";
 
+export const SERVER_URL = process.env.REACT_APP_SERVER_URL ? process.env.REACT_APP_SERVER_URL : `http://${window.location.hostname}:3100`;
+
 const axiosConfig = {
-    baseURL: process.env.REACT_APP_SERVER_URL ? process.env.REACT_APP_SERVER_URL : `http://${window.location.hostname}:3100`,
+    baseURL: SERVER_URL,
     timeout: 20000,
 }
 

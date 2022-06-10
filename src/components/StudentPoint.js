@@ -1,7 +1,6 @@
 import {Button, Space, Tooltip, Typography} from "antd";
 import {useSearchParams} from "react-router-dom";
 import {useEffect, useState} from "react";
-import {convertTitles} from "./TitleActivity";
 import request from "../utils/request";
 import Text from "antd/es/typography/Text";
 import Title from "antd/es/typography/Title";
@@ -13,6 +12,7 @@ import TimesNewRomanNormal from "../fonts/TimesNewRomanNormal";
 import TimesNewRomanBold from "../fonts/TimesNewRomanBold";
 import TimesNewRomanItalic from "../fonts/TimesNewRomanItalic";
 import TimesNewRomanBoldItalic from "../fonts/TimesNewRomanBoldItalic";
+import { flattenTitles } from "./TitleActivity";
 
 const markToString = (mark) => {
     switch (mark) {
@@ -125,6 +125,8 @@ function StudentPoint() {
         },
     ];
     const [searchParams] = useSearchParams();
+    const semesterId = searchParams.get("semester");
+    const studentId = searchParams.get("student");
     const [data, setData] = useState({
         data: [],
         student: {
@@ -135,47 +137,42 @@ function StudentPoint() {
                 }
             },
         },
-        sheet: {
-            semester: {
-                year: {},
-            }
+        semester: {
+            year: {},
         }
     });
 
     useEffect(async () => {
         const newData = (await getData());
-        const convertedData = convertTitles(newData.data);
+        const flattenData = flattenTitles(newData.data);
 
         let maxPointSum = 0;
         let pointSum = 0;
-        convertedData.map(title => {
+        flattenData.map(title => {
             if (title.type === "third") {
-                const point = calculatePoint(title);
-                title.point = point;
-                pointSum += point;
+                pointSum += title.point;
                 maxPointSum += title.max_point;
                 title.reason = getReason(title);
                 title.description = getDescription(title);
             }
         });
 
-        convertedData.push({
+        flattenData.push({
             type: "sum",
             title: "Tổng cộng",
             point: pointSum,
             max_point: `${maxPointSum} (Tối đa 100 điểm)`,
         });
 
-        console.log(convertedData);
+        console.log(flattenData);
 
-        data.data = convertedData;
+        data.data = flattenData;
         data.student = newData.student;
-        data.sheet = newData.sheet;
         setData({...data});
     }, []);
 
     const getData = async () => {
-        return (await request.get(`/point?sheet=${searchParams.get("sheet")}&student=${searchParams.get("student")}`)).data;
+        return (await request.get(`/point?semester=${semesterId}&student=${studentId}`)).data;
     }
 
     const getReason = (thirdTitle) => {
@@ -255,7 +252,6 @@ function StudentPoint() {
         if (titleActivity.type !== "third") return "";
         return titleActivity.title_activities.map((titleActivity) => {
             const activity = titleActivity.activity;
-            const studentActivity = activity.student_activity;
             if (activity.type === "CHECK") {
                 return {
                     html: (

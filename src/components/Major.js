@@ -6,24 +6,20 @@ import { useEffect, useState } from "react";
 
 const columns = [
     {
-        title: "Tên",
+        title: "Tên ngành học",
         dataIndex: "name",
         key: "name",
-        render: (text, record) => (
-            <Link to={`/classes?major=${record.id}`}>{text}</Link>
-        ),
+    },
+    {
+        title: "Khoa",
+        dataIndex: ["department", "name"],
+        key: "department_name",
     },
 ];
 
 function Major() {
     const [searchParams] = useSearchParams();
     const departmentId = searchParams.get("department");
-    const [department, setDepartment] = useState({});
-
-    useEffect(async () => {
-        setDepartment((await request.get(`/departments/${departmentId}`)).data);
-    }, []);
-
     const form = [
         {
             label: "Tên",
@@ -44,8 +40,7 @@ function Major() {
             params={{ department: departmentId }}
             name="Ngành học"
             routes={[
-                {name: "Quản lý sinh viên", path: "/departments"},
-                {name: `Khoa ${department.name}`, path: `/majors?department=${department.id}`},
+                {name: "Quản lý ngành học", path: "/majors"},
             ]}
             columns={columns}
             createForm={form}

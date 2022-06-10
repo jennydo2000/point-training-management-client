@@ -8,6 +8,11 @@ import request from "../utils/request";
 
 const columns = [
     {
+        title: "Lớp",
+        dataIndex: ["class", "name"],
+        key: "class_name",
+    },
+    {
         title: "MSSV",
         dataIndex: "student_code",
         key: "student_code",
@@ -48,28 +53,35 @@ const columns = [
 
 const importColumns = [
     {
+        title: "Lớp",
+        key: "class_id",
+        dataIndex: "class_id",
+        columnIndex: "B",
+        convert: "classes",
+    },
+    {
         title: "MSSV",
         key: "student_code",
         dataIndex: "student_code",
-        columnIndex: "B",
+        columnIndex: "C",
     },
     {
         title: "Họ",
         key: "first_name",
         dataIndex: "first_name",
-        columnIndex: "C",
+        columnIndex: "D",
     },
     {
         title: "Tên",
         key: "last_name",
         dataIndex: "last_name",
-        columnIndex: "D",
+        columnIndex: "E",
     },
     {
         title: "Giới tính",
         key: "gender",
         dataIndex: "gender",
-        columnIndex: "E",
+        columnIndex: "F",
         convert: (text) => {
             if (text === "Nam") return "male";
             else if (text === "Nữ") return "female";
@@ -80,15 +92,8 @@ const importColumns = [
         title: "Ngày sinh",
         key: "dob",
         dataIndex: "dob",
-        columnIndex: "F",
-        convert: (text) => excelDateToJSDate(text),
-    },
-    {
-        title: "Lớp",
-        key: "class_id",
-        dataIndex: "class_id",
         columnIndex: "G",
-        convert: "classes",
+        convert: (text) => excelDateToJSDate(text),
     },
     {
         title: "Tên tài khoản",
@@ -184,10 +189,7 @@ function Class() {
             params={{class: searchParams.get("class")}}
             name="Sinh viên"
             routes={[
-                {name: "Quản lý sinh viên", path: "/departments"},
-                {name: `Khoa ${_class.major.department.name}`, path: `/majors?department=${_class.major.department.id}`},
-                {name: `Ngành ${_class.major.name}`, path: `/classes?major=${_class.major.id}`},
-                {name: `Lớp ${_class.name}`, path: `/students?class=${_class.id}`},
+                {name: "Quản lý sinh viên", path: "/students"},
             ]}
             columns={columns}
             importColumns={importColumns}

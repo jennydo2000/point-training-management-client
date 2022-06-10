@@ -4,12 +4,9 @@ import { Link } from "react-router-dom";
 
 const columns = [
     {
-        title: "Tên",
+        title: "Tên khoa",
         dataIndex: "name",
         key: "name",
-        render: (text, record) => (
-            <Link to={`/majors?department=${record.id}`}>{text}</Link>
-        ),
     },
 ];
 
@@ -26,7 +23,7 @@ function Department() {
             route="/departments"
             name="Khoa"
             routes={[
-                {name: "Quản lý sinh viên", path: "/departments"},
+                {name: "Quản lý khoa", path: "/departments"},
             ]}
             columns={columns}
             createForm={form}

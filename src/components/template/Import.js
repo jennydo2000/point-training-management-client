@@ -4,6 +4,7 @@ import Dragger from "antd/es/upload/Dragger";
 import {InboxOutlined} from "@ant-design/icons";
 import {read} from "xlsx";
 import Text from "antd/es/typography/Text";
+import "./Import.css";
 
 const steps = {
     IMPORT: 0,
@@ -78,7 +79,7 @@ function Import(props) {
     }
 
     const insertFile = () => {
-        props.onInsert(data);
+        props.onImport(data);
     }
 
     if (step === steps.IMPORT)
@@ -99,14 +100,23 @@ function Import(props) {
                 <Button type="primary" onClick={previewFile}>Xem trước</Button>
             </Space>
         );
-    else if (step === steps.PREVIEW)
+    else if (step === steps.PREVIEW) {
+        const columns = [
+            {
+                title: "STT",
+                width: 70,
+                render: (text, record, index) => index + 1,
+            },
+            ...props.columns,
+        ];
         return (
-            <Space direction="vertical" style={{width: "100%", alignItems: "center"}}>
-                <Table pagination={false} sticky columns={props.columns} dataSource={rawData}/>
+            <Space direction="vertical" style={{width: "100%", flexGrow: 1, alignItems: "center"}}>
+                <Table pagination={false} sticky columns={columns.filter(column => !column.hidden)} dataSource={rawData} scroll={{y: 'calc(100vh - 320px)'}}/>
                 <Button type="primary" onClick={insertFile}>Nhập</Button>
                 <Button onClick={() => setStep(steps.IMPORT)}>Quay lại</Button>
             </Space>
         );
+    }
     else return (<>Bước này không có!</>);
 }
 
@@ -116,5 +126,5 @@ Import.defaultProps = {
     columns: [],
     errors: [],
     options: [],
-    onInsert: () => {},
+    onImport: () => {},
 }

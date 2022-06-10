@@ -10,7 +10,7 @@ const columns = [
         key: "name",
         render: (text, record) => (
             <Link to={`/activity_types?semester=${record.id}`}>
-                Học kỳ {text}
+                Học kỳ {text} năm học {record.year.name}
             </Link>
         ),
     },
@@ -20,23 +20,42 @@ function Major() {
     const [searchParams] = useSearchParams();
     const yearId = searchParams.get("year");
 
-    const [year, setYear] = useState({});
-
-    useEffect(async () => {
-        setYear((await request.get(`/years/${yearId}`)).data);
-    }, []);
-
     const form = [
         {
-            label: "Tên",
-            name: "name",
+            label: "Năm học",
+            name: "year_id",
+            type: "select",
+            options: "years",
         },
+        {
+            label: "Học kỳ",
+            name: "name",
+            type: "select",
+            options: [
+                {id: "1", name: "Học kỳ 1"},
+                {id: "2", name: "Học kỳ 2"},
+            ],
+            initialValue: "1",
+        },
+    ];
+
+    const copyForm = [
         {
             label: "Năm học",
             name: "year_id",
             type: "select",
             options: "years",
             initialValue: parseInt(yearId),
+        },
+        {
+            label: "Học kỳ",
+            name: "name",
+            type: "select",
+            options: [
+                {id: "1", name: "Học kỳ 1"},
+                {id: "2", name: "Học kỳ 2"},
+            ],
+            initialValue: "1",
         },
     ];
 
@@ -47,11 +66,11 @@ function Major() {
             name="Học kỳ"
             routes={[
                 {name: "Quản lý hoạt động", path: "/years"},
-                {name: `Năm học ${year.name}`, path: `/semester?year=${yearId}`},
             ]}
             columns={columns}
             createForm={form}
             updateForm={form}
+            copyForm={copyForm}
         />
     );
 }

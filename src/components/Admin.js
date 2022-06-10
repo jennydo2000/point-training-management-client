@@ -16,7 +16,7 @@ import Attendance from "./Attendance";
 import TitleActivity from "./TitleActivity";
 import StudentPoint from "./StudentPoint";
 import Point from "./Point";
-import {BarsOutlined, BookFilled, PieChartOutlined, UserOutlined} from "@ant-design/icons";
+import {ApartmentOutlined, AppstoreOutlined, BarsOutlined, BookFilled, DownOutlined, IdcardOutlined, PieChartOutlined, UnorderedListOutlined, UserOutlined} from "@ant-design/icons";
 import "./Admin.css";
 import ActivityType from "./ActivityType";
 
@@ -35,14 +35,23 @@ function Admin() {
                 </div>
                 <Menu
                     theme="dark"
-                    defaultSelectedKeys={['/users']}
+                    mode="inline"
+                    defaultSelectedKeys={['/']}
+                    defaultOpenKeys={['']}
                     onClick={handleClickMenu}
                 >
                     <Menu.Item key="/" icon={<PieChartOutlined />}>Thống kê</Menu.Item>
-                    <Menu.Item key="/users" icon={<UserOutlined/>}>Quản lý tài khoản</Menu.Item>
-                    <Menu.Item key="/departments" icon={<UserOutlined/>}>Quản lý sinh viên</Menu.Item>
-                    <Menu.Item key="/years" icon={<BarsOutlined/>}>Hoạt động từng học kỳ</Menu.Item>
-                    <Menu.Item key="/activity_types" icon={<BarsOutlined/>}>Hoạt động thường niên</Menu.Item>
+                    <Menu.SubMenu key="sub1" title="Chung" icon={<AppstoreOutlined />}>
+                        <Menu.Item key="/departments" icon={<ApartmentOutlined />}>Khoa</Menu.Item>
+                        <Menu.Item key="/majors" icon={<ApartmentOutlined />}>Ngành học</Menu.Item>
+                        <Menu.Item key="/classes" icon={<ApartmentOutlined />}>Lớp học</Menu.Item>
+                        <Menu.Item key="/years" icon={<ApartmentOutlined />}>Năm học</Menu.Item>
+                    </Menu.SubMenu>
+                    <Menu.SubMenu key="sub2" title="Quản lý" icon={<IdcardOutlined />}>
+                        <Menu.Item key="/users" icon={<UserOutlined/>}>Admin và NNL</Menu.Item>
+                        <Menu.Item key="/students" icon={<UserOutlined/>}>Sinh viên</Menu.Item>
+                        <Menu.Item key="/semesters" icon={<BarsOutlined/>}>Hoạt động</Menu.Item>
+                    </Menu.SubMenu>
                 </Menu>
             </Sider>
             <Layout>

@@ -33,7 +33,9 @@ function Index(props) {
 
     const getData = async (search = null) => {
         const url = search ? `&search=${search}` : '';
-        return await request.get(`${props.route}?${new URLSearchParams(props.params).toString()}${url}`);
+        const params = props.params;
+        Object.keys(params || []).forEach((k) => params[k] == null && delete params[k]);
+        return await request.get(`${props.route}?${new URLSearchParams(params).toString()}${url}`);
     }
 
     const getOptions = async () => {
@@ -252,17 +254,9 @@ function Index(props) {
                 centered
                 visible={showModal === modalType.IMPORT}
                 onCancel={close}
-                footer={[
-                    <Button
-                        key="back"
-                        onClick={close}
-                    >
-                        Đóng
-                    </Button>
-
-                ]}
+                footer={[]}
             >
-                <Import options={options} errors={importErrors} columns={props.importColumns || []} onInsert={handleImport}/>
+                <Import options={options} errors={importErrors} columns={props.importColumns || []} onImport={handleImport}/>
             </Modal>
 
             <Modal

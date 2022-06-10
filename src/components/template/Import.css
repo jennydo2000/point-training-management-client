@@ -1,0 +1,30 @@
+.ant-table-wrapper {
+    height: 100%;
+}
+.ant-table-wrapper .ant-spin-nested-loading {
+    height: 100%;
+}
+.ant-table-wrapper .ant-spin-nested-loading .ant-spin-container {
+    height: 100%;
+    display: flex;
+    flex-flow: column nowrap;
+}
+.ant-table-wrapper .ant-spin-nested-loading .ant-spin-container .ant-table {
+    flex: auto;
+    overflow: hidden;
+}
+.ant-table-wrapper .ant-spin-nested-loading .ant-spin-container .ant-table .ant-table-container {
+    height: 100%;
+    display: flex;
+    flex-flow: column nowrap;
+}
+.ant-table-wrapper .ant-spin-nested-loading .ant-spin-container .ant-table .ant-table-container .ant-table-header {
+    flex: none;
+}
+.ant-table-wrapper .ant-spin-nested-loading .ant-spin-container .ant-table .ant-table-container .ant-table-body {
+    flex: auto;
+    overflow: scroll;
+}
+.ant-table-wrapper .ant-spin-nested-loading .ant-spin-container .ant-table-pagination {
+    flex: none;
+}

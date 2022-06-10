@@ -3,13 +3,12 @@ import {useNavigate, useSearchParams} from "react-router-dom";
 import request from "../utils/request";
 import {Button, Form, Input, Modal, PageHeader, Select, Space, Table, Typography} from "antd";
 import {DeleteFilled, MinusOutlined} from "@ant-design/icons";
-import Title from "antd/es/typography/Title";
 import FullHeightTable from "./elements/FullHeightTable";
 import {getActivityTypeAction} from "./Activity";
 import {useForm} from "antd/lib/form/Form";
 import CustomBreadcrumb from "./elements/CustomBreadcumb";
 
-export const convertTitles = (primaryTitles) => {
+export const flattenTitles = (primaryTitles) => {
     const alphabet = "abcdefghijklmnopqrstuvwxyz";
     const convertedData = [];
     primaryTitles.forEach((primaryTitle, index) => {
@@ -77,27 +76,28 @@ function TitleActivity() {
         }
     ];
     const [searchParams] = useSearchParams();
+    const semesterId = searchParams.get("semester");
     const navigate = useNavigate();
     const [data, setData] = useState({
         data: [],
     });
-    const [sheet, setSheet] = useState({semester: {year: {}}});
+    const [semester, setSemester] = useState({year: {} });
     const [thirdTitleActivity, setThirdTitleActivity] = useState(null);
 
     useEffect(async () => {
         const newData = (await getData());
-        setSheet(await getSheet());
-        const convertedData = convertTitles(newData.data.primaryTitles);
+        setSemester(await getSemester());
+        const convertedData = flattenTitles(newData.data.primaryTitles);
         data.data = convertedData;
         setData({...data});
     }, []);
 
     const getData = async () => {
-        return (await request.get(`/title_activities?sheet=${searchParams.get("sheet")}`)).data;
+        return (await request.get(`/title_activities?semester=${semesterId}`)).data;
     }
 
-    const getSheet = async () => {
-        return (await request.get(`/sheets/${searchParams.get("sheet")}`)).data;
+    const getSemester = async () => {
+        return (await request.get(`/semesters/${semesterId}`)).data;
     }
 
     const openThirdTitleActivity = (record) => {
@@ -131,11 +131,10 @@ function TitleActivity() {
                 breadcrumb={
                     <CustomBreadcrumb routes={[
                         {name: "Quản lý hoạt động", path: "/years"},
-                        {name: `Năm học ${sheet.semester.year.name}`, path: `/semesters?year=${sheet.semester.year.id}`},
-                        {name: `Học kỳ ${sheet.semester.name}`, path: `/activity_types?semester=${sheet.semester.id}`},
-                        {name: "Phiếu điểm", path: `/sheets?semester=${sheet.semester.id}`},
-                        {name: `${sheet.name}`, path: `/points?sheet=${sheet.id}`},
-                        {name: `Cấu hình phiếu điểm`, path: `/title_activities?sheet=${sheet.id}`},
+                        {name: `Năm học ${semester.year.name}`, path: `/semesters?year=${semester.year.id}`},
+                        {name: `Học kỳ ${semester.name}`, path: `/activity_types?semester=${semester.id}`},
+                        {name: "Điểm", path: `/points?semester=${semester.id}`},
+                        {name: `Cấu hình phiếu điểm`, path: `/title_activities?semester=${semester.id}`},
                     ]} />
                 }
             />
@@ -159,7 +158,7 @@ function TitleActivity() {
                     <Button type="primary" onClick={saveChanges}>Lưu thay đổi</Button>,
                 ]}
             >
-                <ThirdTitleActivity title={thirdTitleActivity} sheet={sheet}/>
+                <ThirdTitleActivity title={thirdTitleActivity} semester={semester}/>
             </Modal>
         </>
     );
@@ -169,7 +168,7 @@ const ThirdTitleActivity = (props) => {
     const defaultTitleActivity = {
         third_title_id: null,
         activity_id: null,
-        sheet_id: null,
+        semester_id: null,
         point: [],
         options: [],
     }
@@ -238,19 +237,24 @@ const ThirdTitleActivity = (props) => {
     }
 
     const getActivities = async () => {
-        return (await request.get(`/activities?semester=${props.sheet.semester_id}&type=all`)).data;
+        return (await request.get(`/activities?semester=${props.semester.id}&type=all`)).data;
+    }
+
+    const addTitleActivities = (activityIds) => {
+        activityIds.forEach(activityId => addTitleActivity(activityId));
+        setTitle({...title});
+        closeAddActivity();
     }
 
     const addTitleActivity = (activityId) => {
-        const newTitleActivity = defaultTitleActivity;
+        const newTitleActivity = JSON.parse(JSON.stringify(defaultTitleActivity));
         newTitleActivity.activity = activities.data.find(activity => activity.id === activityId);
         newTitleActivity.activity_id = newTitleActivity.activity.id;
         newTitleActivity.third_title_id = title.id;
-        newTitleActivity.sheet_id = props.sheet.id;
+        newTitleActivity.semester_id = props.semester.id;
+        console.log(newTitleActivity);
         title.title_activities.push(newTitleActivity);
         props.title.title_activities = title.title_activities = [...title.title_activities];
-        setTitle({...title});
-        closeAddActivity();
     }
 
     const deleteTitleActivity = () => {
@@ -287,20 +291,20 @@ const ThirdTitleActivity = (props) => {
                             form={form}
                             labelCol={{span: 6}}
                             wrapperCol={{span: 18}}
-                            onFinish={(values) => addTitleActivity(values.activity_id)}
+                            onFinish={(values) => addTitleActivities(values.activity_ids)}
                         >
                             <Form.Item
                                 label="Hoạt động"
-                                name="activity_id"
+                                name="activity_ids"
                             >
                                 <Select
                                     showSearch
+                                    mode="multiple"
                                     onKeyDown={(e) => setKeyword(e.target.value)}
                                     style={{width: "100%"}}
                                     filterOption={false}
-                                    defaultValue={-1}
+                                    defaultValue={[]}
                                 >
-                                    <Select.Option value={-1}>Chọn hoạt động...</Select.Option>
                                     {activities.data.filter(item => keyword === '' || item.name.toLowerCase().includes(keyword.toLowerCase())).map((activity, index) =>
                                         <Select.Option
                                             key={index}

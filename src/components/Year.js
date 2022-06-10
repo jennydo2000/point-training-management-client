@@ -7,9 +7,6 @@ const columns = [
         title: "Tên",
         dataIndex: "name",
         key: "name",
-        render: (text, record) => (
-            <Link to={`/semesters?year=${record.id}`}>{text}</Link>
-        ),
     },
 ];
 
